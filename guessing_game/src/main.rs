@@ -9,7 +9,7 @@ fn main() {
 
     // println!("The secret number is {secret_number}");
 
-    loop {
+    'guess_loop: loop {
         println!("Please input your guess.");
 
         let mut guess: String = String::new();
@@ -30,7 +30,7 @@ fn main() {
             Ordering::Greater => println!("Too high!"),
             Ordering::Equal => {
                 println!("You guessed the number!!");
-                break;
+                break 'guess_loop;
             }
         }
     }

@@ -5,7 +5,7 @@ use std::io;
 
 const CONVERSION_TYPES: [&str; 2] = ["Celcius -> Fahrenheit", "Fahrenheit -> Celcius"];
 
-fn get_conversion_type() -> String {
+fn get_conversion_type() -> &'static str {
     println!("Type 'C' to convert Fahrenheit to Celcius or 'F' to convert Celcius to Fahrenheit.");
 
     loop {
@@ -18,9 +18,9 @@ fn get_conversion_type() -> String {
         let conversion_type = conversion_type.trim().to_string();
 
         if conversion_type.to_uppercase() == "C" {
-            return CONVERSION_TYPES[0].to_string();
+            return CONVERSION_TYPES[0];
         } else if conversion_type.to_uppercase() == "F" {
-            return CONVERSION_TYPES[1].to_string();
+            return CONVERSION_TYPES[1];
         } else {
             println!("Invalid value... Try again.")
         }
@@ -46,7 +46,7 @@ fn get_temperature() -> f64 {
     }
 }
 
-fn convert(conversion_type: String, temperature: f64) -> f64 {
+fn convert(conversion_type: &str, temperature: f64) -> f64 {
     if conversion_type == CONVERSION_TYPES[0] {
         return (temperature) * (9.0 / 5.0) + 32.0;
     } else {
@@ -57,6 +57,6 @@ fn convert(conversion_type: String, temperature: f64) -> f64 {
 fn main() {
     let conversion_type = get_conversion_type();
     let temperature = get_temperature();
-    let result: f64 = convert(conversion_type.to_string(), temperature);
+    let result: f64 = convert(conversion_type, temperature);
     println!("Converting {temperature} {conversion_type} is equal to {result}");
 }

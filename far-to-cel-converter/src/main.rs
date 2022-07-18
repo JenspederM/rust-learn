@@ -3,26 +3,26 @@ use std::io;
 // C to F: F = C*(9/5) + 32
 // F to C: C = (F-32)*(5/9)
 
-const CONVERSION_TYPES: [&str; 2] = ["Celcius -> Fahrenheit", "Fahrenheit -> Celcius"];
+fn convert_temperature(temperature: f64) -> f64 {
+    let mut input: String = String::new();
 
-fn get_conversion_type() -> &'static str {
-    println!("Type 'C' to convert Fahrenheit to Celcius or 'F' to convert Celcius to Fahrenheit.");
+    println!("What are you converting? Celcius (c) or Fahrenheit (f)");
 
     loop {
-        let mut conversion_type: String = String::new();
+        io::stdin().read_line(&mut input).expect("Invalid Input.");
 
-        io::stdin()
-            .read_line(&mut conversion_type)
-            .expect("Invalid Input.");
+        let input = input.trim().to_lowercase();
 
-        let conversion_type = conversion_type.trim().to_string();
-
-        if conversion_type.to_uppercase() == "C" {
-            return CONVERSION_TYPES[0];
-        } else if conversion_type.to_uppercase() == "F" {
-            return CONVERSION_TYPES[1];
+        if input == "c" || input == "celcius" {
+            let result = (&temperature) * (9.0 / 5.0) + 32.0;
+            println!("{temperature} Cº == {result} F");
+            return result;
+        } else if input == "f" || input == "fahrenheit" {
+            let result = (&temperature - 32.0) * (5.0 / 9.0);
+            println!("{temperature} F == {result} Cº");
+            return result;
         } else {
-            println!("Invalid value... Try again.")
+            println!("Wrong input: {input}Valid options are: celcius (c) or fahrenheit (f)")
         }
     }
 }
@@ -46,17 +46,35 @@ fn get_temperature() -> f64 {
     }
 }
 
-fn convert(conversion_type: &str, temperature: f64) -> f64 {
-    if conversion_type == CONVERSION_TYPES[0] {
-        return (temperature) * (9.0 / 5.0) + 32.0;
-    } else {
-        return (temperature - 32.0) * (5.0 / 9.0);
-    }
-}
-
 fn main() {
-    let conversion_type = get_conversion_type();
-    let temperature = get_temperature();
-    let result: f64 = convert(conversion_type, temperature);
-    println!("Converting {temperature} {conversion_type} is equal to {result}");
+    println!("Welcome to the temperature converter");
+    println!();
+    println!("I Hope you enjoy it!");
+
+    loop {
+        println!();
+        let mut retry: String = String::new();
+
+        let temperature = get_temperature();
+        convert_temperature(temperature);
+
+        println!("Do you want to convert another temperature? yes (y) or no (n)");
+
+        io::stdin()
+            .read_line(&mut retry)
+            .expect("Something went wrong with stdin.");
+
+        let retry = retry.trim().to_ascii_lowercase();
+
+        if retry == "yes" || retry == "y" {
+            continue;
+        } else if retry == "no" || retry == "n" {
+            break;
+        } else {
+            println!("Invalid input: {retry}. Valid options are yes (y) or no (n)");
+        }
+    }
+
+    println!();
+    println!("Bye bye")
 }

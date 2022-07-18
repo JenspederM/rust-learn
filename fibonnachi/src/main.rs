@@ -1,6 +1,19 @@
 use cached::proc_macro::cached;
 use std::io;
 
+fn get_input() -> i64 {
+    let mut input = String::new();
+
+    println!("Enter a number to get it's Fibonacci value");
+
+    io::stdin().read_line(&mut input).expect("Error");
+
+    return match input.trim().parse() {
+        Ok(num) => num,
+        Err(_) => -1,
+    };
+}
+
 #[cached]
 fn fibonacci(n: i64) -> i64 {
     if n <= 1 {
@@ -10,17 +23,7 @@ fn fibonacci(n: i64) -> i64 {
 }
 
 fn main() {
-    let mut input = String::new();
-
-    println!("Enter a number to get it's Fibonacci value");
-
-    io::stdin().read_line(&mut input).expect("Error");
-
-    let input = match input.trim().parse() {
-        Ok(num) => num,
-        Err(_) => -1,
-    };
-
+    let input = get_input();
     let result = fibonacci(input);
 
     println!("Fibonacci of {} is {}", input, result)

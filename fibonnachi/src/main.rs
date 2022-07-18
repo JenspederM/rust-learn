@@ -1,7 +1,7 @@
 use cached::proc_macro::cached;
 use std::io;
 
-fn get_input() -> i64 {
+fn get_n() -> i64 {
     let mut input = String::new();
 
     println!("Enter a number to get it's Fibonacci value");
@@ -23,7 +23,7 @@ fn fibonacci(n: i64) -> i64 {
 }
 
 fn main() {
-    let input = get_input();
+    let input = get_n();
     let result = fibonacci(input);
 
     println!("Fibonacci of {} is {}", input, result)

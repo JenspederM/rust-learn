@@ -42,7 +42,7 @@ pub fn handle_status(msg: mqtt::Message) -> Result<PackMLStatus> {
         }
     };
 
-    info!("{:?}", obj);
+    debug!("{:?}", obj);
     Ok(obj)
 }
 
@@ -57,7 +57,7 @@ pub struct ValidationSchema {
 #[derive(Serialize, Deserialize, Debug)]
 #[allow(non_snake_case)]
 pub struct PackMLEvent0x03015100 {
-    decodeToSQL: bool,
+    decodeToSQL: String,
     dataContentDecodingSchema: String,
     telegramTypeFriendly: String,
     machineIDx: i32,
@@ -73,6 +73,10 @@ pub struct PackMLEvent0x03015100 {
     dataContent: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PackMLEvent {
+    PackMLEvent0x03015100,
+}
 /// Process PackML Event Telegrams
 ///
 /// Example message:
@@ -114,8 +118,8 @@ pub struct PackMLEvent0x03015100 {
 ///    "timestamp": "2022-05-10T07:08:10.830+02:00"
 ///
 ///  }
-pub fn handle_event(msg: mqtt::Message) -> Result<PackMLEvent0x03015100> {
-    let obj: PackMLEvent0x03015100 = match serde_json::from_str(&msg.payload_str()) {
+pub fn handle_event(msg: mqtt::Message) -> Result<PackMLEvent> {
+    let obj: PackMLEvent = match serde_json::from_str(&msg.payload_str()) {
         Ok(msg) => msg,
         Err(e) => {
             panic!("{}", e)

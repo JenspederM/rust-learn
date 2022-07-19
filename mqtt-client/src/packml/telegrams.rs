@@ -62,7 +62,7 @@ pub struct PackMLEvent0x03015100 {
     telegramTypeFriendly: String,
     machineIDx: i32,
     mode: i32,
-    validationSchema: ValidationSchema,
+    validationSchema: String,
     telegramDescription: String,
     telegramType: String,
     unitID: i32,

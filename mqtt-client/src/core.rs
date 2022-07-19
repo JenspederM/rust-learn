@@ -31,25 +31,49 @@ pub fn get_env(key: &str) -> String {
     }
 }
 
-pub fn init_log() {
-    dotenv().ok();
-
-    match env::var("RUST_LOG") {
+fn env_default(key: &str, default: &str) -> String {
+    let masked = ["password", "cert"];
+    match env::var(key) {
         Ok(s) => {
-            info!("'RUST_LOG' set to '{s}'")
+            if masked.contains(&key) {
+                info!("'{key}' set to '********'")
+            } else {
+                info!("'{key}' set to '{s}'")
+            }
         }
         Err(_) => {
-            info!("'RUST_LOG' not set. Defaults to 'info'");
-            env::set_var("RUST_LOG", "info");
+            info!("'{key}' not set. Defaults to '{default}'");
+            env::set_var(key, default);
         }
     }
 
+    return env::var(key).expect("Something went wrong while setting env vars...");
+}
+
+fn init_mqtt_defaults() {
+    dotenv().ok();
+    env_default("MQTT_BROKER", "tcp://localhost:1883");
+    env_default("MQTT_CLIENT", "rust_client");
+    env_default("MQTT_TOPICS", "#");
+    env_default("MQTT_USERNAME", "");
+    env_default("MQTT_PASSWORD", "");
+    env_default("MQTT_LWT_TOPIC", "lwt");
+    env_default("MQTT_LWT_PAYLOAD", "Last will of rust_client");
+}
+
+/// Initialize logging
+///
+/// Here we pull also initialize defaults
+pub fn init_log() {
+    dotenv().ok();
+    env_default("RUST_LOG", "info");
     env_logger::init();
 }
 
 impl MqttClient {
     pub fn new() -> Self {
-        dotenv().ok();
+        init_mqtt_defaults();
+        init_log();
 
         let broker = get_env("MQTT_BROKER");
         let client_id = get_env("MQTT_CLIENT");

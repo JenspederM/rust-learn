@@ -9,9 +9,10 @@ build   = "build.rs"
 futures = "0.1"
 tokio   = "0.1.21"
 clap    = "2.33.0"
+dotenv = "0.15.0"
 
     [dependencies.rdkafka]
-    version     = "~0.21"
+    version     = "0.28.0"
     features    = ["ssl", "sasl"]
 
 [[bin]]

@@ -5,9 +5,6 @@ mod packml;
 extern crate log;
 
 fn main() {
-    // Initialize Logging based on level specified in RUST_LOG
-    core::init_log();
-
     // Create a new MQTT Client.
     let client = core::MqttClient::new();
 

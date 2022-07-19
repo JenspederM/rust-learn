@@ -176,7 +176,7 @@ impl MqttClient {
     }
 
     /// Reconnect to the broker when connection is lost.
-    pub fn try_reconnect(&self) -> bool {
+    fn try_reconnect(&self) -> bool {
         warn!("Connection lost. Waiting to retry connection");
 
         let limit = 12;

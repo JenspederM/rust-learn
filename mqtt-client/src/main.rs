@@ -238,7 +238,7 @@ async fn main() -> azure_core::error::Result<()> {
                     if v.len() == 2 {
                         let now = Utc::now();
                         log::info!("Flushing data from {}: {:?}", &kp, v);
-                        adls::upload_data(
+                        adls::upload_data_multiple(
                             &data_lake_client,
                             "raw".to_string(),
                             format!("rust-tests/{}/{}.json", &kp, &now.timestamp()),

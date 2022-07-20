@@ -37,6 +37,7 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
     let payload_str: Value = serde_json::from_str(&msg.payload_str()).expect("Hello");
     // Set default path
     let path = String::from("");
+    let mut n_per_file = 1;
 
     // Handle PackML
     if topic.starts_with("packml") {
@@ -59,26 +60,27 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
                 now.month(),
                 now.day()
             );
-            log::debug!("Created path: {path}");
+            n_per_file = 2;
+            log::debug!("packml.contains('event') {n_per_file} files per path {path}");
         } else if topic.contains("status") && service_name != &Value::Null {
             let path = format!(
                 "packml/status/service_name={}",
                 value_to_string(&service_name),
             );
-            log::debug!("Created path {path}");
+            log::debug!("packml.contains('status') {n_per_file} files per path {path}");
         }
     } else if topic.starts_with("service") {
         let host = &payload["Host"];
         if topic.contains("status") && host != &Value::Null {
             let path = format!("master/status/host={}", value_to_string(&host));
-            log::debug!("Created path {path}");
+            log::debug!("service.contains('status') {n_per_file} files per path {path}");
         }
     }
 
     let payload = MqttPayload {
         path: path,
         payload: payload_str.to_string(),
-        n_per_file: 2,
+        n_per_file: n_per_file,
     };
     log::info!("{:?}", payload);
 
@@ -258,6 +260,10 @@ async fn main() -> azure_core::error::Result<()> {
                     // Add the newly received payload to the vector
                     v.push(received.payload);
                     // If we have reached our write limit we flush our data
+                    println!(
+                        "v.len() as i32 == received.n_per_file  = {}",
+                        v.len() as i32 == received.n_per_file
+                    );
                     if v.len() as i32 == received.n_per_file {
                         log::info!("Flushing data from {}: {:?}", &received.path.to_string(), v);
                         // Upload multiline json to datalake

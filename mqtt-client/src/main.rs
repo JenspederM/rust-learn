@@ -82,7 +82,7 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
         payload: payload_str.to_string(),
         n_per_file: n_per_file,
     };
-    log::info!("{:?}", payload);
+    log::debug!("{:?}", payload);
 
     Ok(payload)
 }

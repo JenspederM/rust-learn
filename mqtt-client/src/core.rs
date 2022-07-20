@@ -31,7 +31,7 @@ pub fn get_env(key: &str) -> String {
     }
 }
 
-fn env_default(key: &str, default: &str) -> String {
+pub fn env_default(key: &str, default: &str) -> String {
     let masked = ["password", "cert"];
     match env::var(key) {
         Ok(s) => {

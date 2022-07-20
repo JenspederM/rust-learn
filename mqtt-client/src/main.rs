@@ -19,22 +19,29 @@ mod utils;
 pub struct MqttPayload {
     pub path: String,
     pub payload: String,
+    pub n_per_file: i32,
 }
 
 fn value_to_string(v: &Value) -> String {
     return v.to_string().trim().replace("\"", "");
 }
 
-fn get_msg_path(msg: &mqtt::Message) -> Result<String> {
-    let topic: &str = msg.topic();
-    let payload: Value = serde_json::from_str(&msg.payload_str())?;
-
+fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
+    // Get current time
     let now = Utc::now();
+
+    // Get the message payload and topic
+    let payload: Value = serde_json::from_str(&msg.payload_str())?;
+    let topic = msg.topic();
+    // Get the payload as a String
+    let payload_str: Value = serde_json::from_str(&msg.payload_str()).expect("Hello");
+    // Set default path
+    let path = String::from("");
 
     // Handle PackML
     if topic.starts_with("packml") {
-        let telegram_type = &payload["telegramTypeFriendly"];
         let machine_idx = &payload["machineIDx"];
+        let telegram_type = &payload["telegramTypeFriendly"];
         let telegram_version = &payload["telegramTypeVersion"];
         let service_name = &payload["ServiceName"];
 
@@ -53,25 +60,29 @@ fn get_msg_path(msg: &mqtt::Message) -> Result<String> {
                 now.day()
             );
             log::debug!("Created path: {path}");
-            return Ok(path);
         } else if topic.contains("status") && service_name != &Value::Null {
             let path = format!(
                 "packml/status/service_name={}",
                 value_to_string(&service_name),
             );
             log::debug!("Created path {path}");
-            return Ok(path);
         }
     } else if topic.starts_with("service") {
         let host = &payload["Host"];
         if topic.contains("status") && host != &Value::Null {
             let path = format!("master/status/host={}", value_to_string(&host));
             log::debug!("Created path {path}");
-            return Ok(path);
         }
     }
 
-    Ok(String::new())
+    let payload = MqttPayload {
+        path: path,
+        payload: payload_str.to_string(),
+        n_per_file: 2,
+    };
+    log::info!("{:?}", payload);
+
+    Ok(payload)
 }
 
 // Callback for a successful connection to the broker.
@@ -147,9 +158,13 @@ async fn main() -> azure_core::error::Result<()> {
     // Initialize Logging
     utils::init_log();
 
+    // Create Sender and Receiver to pass messages between two threads.
+    // One thread will run the MQTT client, and the other will send messages to ADLS.
     let (tx, rx) = mpsc::channel();
 
+    // Send MQTT client to it's own thread.
     thread::spawn(move || {
+        // By default, values are loaded from env. See <MqttConnectOptions>
         let mqtt_connect_options: MqttConnectOptions = MqttConnectOptions {
             ..MqttConnectOptions::default()
         };
@@ -181,23 +196,21 @@ async fn main() -> azure_core::error::Result<()> {
         #[allow(unused)]
         cli.set_message_callback(move |_cli, msg| {
             if let Some(msg) = msg {
-                let path = get_msg_path(&msg).expect("Error getting path");
-                let topic = msg.topic();
-                let payload_str: Value = serde_json::from_str(&msg.payload_str()).expect("Hello");
-                log::info!("{}: {} - {}", path, topic, payload_str);
-                tx.send(MqttPayload {
-                    path: path,
-                    payload: payload_str.to_string(),
-                });
+                // Get the path for the message
+                let payload = get_payload(&msg).expect("Error getting path");
+
+                // Send MqttPayload with the path and payload to main thread.
+                tx.send(payload);
             }
         });
 
-        // Define the set of options for the connection
+        // Set Last Will Message. This will be triggered if the client disconnects abrubtly.
         let lwt = mqtt::Message::new(
             mqtt_connect_options.lwt_topic,
             mqtt_connect_options.lwt_payload,
             1,
         );
+
         // Define Connection Options
         let conn_opts = mqtt::ConnectOptionsBuilder::new()
             .keep_alive_interval(Duration::from_secs(20))
@@ -211,7 +224,7 @@ async fn main() -> azure_core::error::Result<()> {
         log::info!("Connecting to the MQTT server...");
         cli.connect_with_callbacks(conn_opts, on_connect_success, on_connect_failure);
 
-        // Just wait for incoming messages.
+        // Wait for incoming messages.
         loop {
             thread::sleep(Duration::from_millis(1000));
         }
@@ -220,31 +233,43 @@ async fn main() -> azure_core::error::Result<()> {
         // LWT message since we're not disconnecting cleanly.
     });
 
+    // Create client to interact with the datalake.
     let data_lake_client = adls::create_data_lake_client().await?;
+    // Initialize HashMap (dictionary) to hold <path, Vec<payload_str>>
     let mut map: HashMap<String, Vec<String>> = HashMap::new();
 
+    // For every message received by rx Receiver
     for received in rx {
+        log::debug!("Received: {:?}", received);
+        // If there is a path
         if received.path != "" {
-            let key = received.path.to_string();
-            let kp = key.clone();
-
-            match map.entry(key) {
+            // Match on the path
+            match map.entry(received.path.to_string()) {
+                // If the path doesn't exist, then insert a vector with the payoad
                 Entry::Vacant(e) => {
+                    log::debug!("entry {} is vacant!", e.key());
                     e.insert(vec![received.payload]);
                 }
+                // If the path does exist
                 Entry::Occupied(mut e) => {
+                    log::debug!("entry {} is occupied!", e.key());
+                    // Get the current vector of payloads from the topic as a mutable
                     let v = e.get_mut();
+                    // Add the newly received payload to the vector
                     v.push(received.payload);
-                    if v.len() == 2 {
-                        let now = Utc::now();
-                        log::info!("Flushing data from {}: {:?}", &kp, v);
-                        adls::upload_data_multiple(
+                    // If we have reached our write limit we flush our data
+                    if v.len() as i32 == received.n_per_file {
+                        log::info!("Flushing data from {}: {:?}", &received.path.to_string(), v);
+                        // Upload multiline json to datalake
+                        adls::upload_json_multiline(
                             &data_lake_client,
                             "raw".to_string(),
-                            format!("rust-tests/{}/{}.json", &kp, &now.timestamp()),
+                            format!("rust-tests/{}", &received.path.to_string()),
                             v.to_vec(),
+                            "json".to_string(),
                         )
                         .await?;
+                        // Clear vector for new messages
                         v.clear();
                     }
                 }
@@ -252,6 +277,5 @@ async fn main() -> azure_core::error::Result<()> {
             log::debug!("Current Map: {:?}", map);
         }
     }
-
     Ok(())
 }

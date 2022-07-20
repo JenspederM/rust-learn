@@ -73,6 +73,27 @@ pub struct PackMLEvent0x03015100 {
     dataContent: String,
 }
 
+impl Default for PackMLEvent0x03015100 {
+    fn default() -> Self {
+        PackMLEvent0x03015100 {
+            decodeToSQL: "bad".to_string(),
+            dataContentDecodingSchema: "bad".to_string(),
+            telegramTypeFriendly: "0x03015100".to_string(),
+            machineIDx: -999,
+            mode: -999,
+            validationSchema: "bad".to_string(),
+            telegramDescription: "bad".to_string(),
+            telegramType: "bad".to_string(),
+            unitID: -999,
+            state: -999,
+            telegramTypeVersion: "bad".to_string(),
+            friendlyName: "bad".to_string(),
+            timestamp: Utc::now(),
+            dataContent: "bad".to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PackMLEvent {
     PackMLEvent0x03015100,

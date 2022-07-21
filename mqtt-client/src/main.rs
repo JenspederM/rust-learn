@@ -9,24 +9,17 @@ use std::sync::mpsc;
 use std::time::Duration;
 use std::{process, thread};
 
-use dotenv::dotenv;
 use serde_json::{Result, Value};
 
 mod adls;
+mod types;
 mod utils;
 
-#[derive(Debug)]
-pub struct MqttPayload {
-    pub path: String,
-    pub payload: String,
-    pub n_per_file: i32,
-}
-
-fn value_to_string(v: &Value) -> String {
-    return v.to_string().trim().replace("\"", "");
-}
-
-fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
+/// Contruct MqttPayload based on Topic.
+///
+/// Takes an `mqtt:Message` and constructs a `MqttPayload` based on the topic
+/// from which the `mqtt::Message` is sent.
+fn get_payload(msg: &mqtt::Message) -> Result<types::MqttPayload> {
     // Get current time
     let now = Utc::now();
 
@@ -53,9 +46,9 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
         {
             let path = format!(
                 "packml/event/telegram_type={}/telegram_version={}/machine_idx={}/year={}/month={}/day={}",
-                value_to_string(&telegram_type),
-                value_to_string(&telegram_version),
-                value_to_string(&machine_idx),
+                utils::value_to_string(&telegram_type),
+                utils::value_to_string(&telegram_version),
+                utils::value_to_string(&machine_idx),
                 now.year(),
                 now.month(),
                 now.day()
@@ -65,19 +58,19 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
         } else if topic.contains("status") && service_name != &Value::Null {
             let path = format!(
                 "packml/status/service_name={}",
-                value_to_string(&service_name),
+                utils::value_to_string(&service_name),
             );
             log::debug!("packml.contains('status') {n_per_file} files per path {path}");
         }
     } else if topic.starts_with("service") {
         let host = &payload["Host"];
         if topic.contains("status") && host != &Value::Null {
-            let path = format!("master/status/host={}", value_to_string(&host));
+            let path = format!("master/status/host={}", utils::value_to_string(&host));
             log::debug!("service.contains('status') {n_per_file} files per path {path}");
         }
     }
 
-    let payload = MqttPayload {
+    let payload = types::MqttPayload {
         path: path,
         payload: payload_str.to_string(),
         n_per_file: n_per_file,
@@ -87,15 +80,15 @@ fn get_payload(msg: &mqtt::Message) -> Result<MqttPayload> {
     Ok(payload)
 }
 
-// Callback for a successful connection to the broker.
-// We subscribe to the topic(s) we want here.
+/// Callback for a successful connection to the broker.
+/// We subscribe to the topic(s) we want here.
 fn on_connect_success(cli: &mqtt::AsyncClient, _msgid: u16) {
     log::info!("Connection succeeded");
     // Subscribe to the desired topic(s).
     //cli.subscribe_many(TOPICS, vec!(1, 1));
     // Since we are using subscribe_many, we have to transform the comma-separated
     // list of topics into a Vector of Strings.
-    let topics: Vec<String> = utils::get_env("MQTT_TOPICS")
+    let topics: Vec<String> = utils::env_default("MQTT_TOPICS", "#")
         .split(",")
         .map(|el| el.trim().to_string())
         .collect();
@@ -109,13 +102,13 @@ fn on_connect_success(cli: &mqtt::AsyncClient, _msgid: u16) {
     // TODO: This doesn't yet handle a failed subscription.
 }
 
-// Callback for a failed attempt to connect to the server.
-// We simply sleep and then try again.
-//
-// Note that normally we don't want to do a blocking operation or sleep
-// from  within a callback. But in this case, we know that the client is
-// *not* conected, and thus not doing anything important. So we don't worry
-// too much about stopping its callback thread.
+/// Callback for a failed attempt to connect to the server.
+/// We simply sleep and then try again.
+///
+/// Note that normally we don't want to do a blocking operation or sleep
+/// from  within a callback. But in this case, we know that the client is
+/// *not* conected, and thus not doing anything important. So we don't worry
+/// too much about stopping its callback thread.
 fn on_connect_failure(cli: &mqtt::AsyncClient, _msgid: u16, rc: i32) {
     log::warn!("Connection attempt failed with error code {}.\n", rc);
     thread::sleep(Duration::from_millis(2500));
@@ -123,37 +116,6 @@ fn on_connect_failure(cli: &mqtt::AsyncClient, _msgid: u16, rc: i32) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-
-struct MqttConnectOptions {
-    broker: String,
-    client_id: String,
-    username: String,
-    password: String,
-    lwt_topic: String,
-    lwt_payload: String,
-}
-
-impl Default for MqttConnectOptions {
-    fn default() -> MqttConnectOptions {
-        dotenv().ok();
-
-        let broker = utils::get_env("MQTT_BROKER");
-        let client_id = utils::get_env("MQTT_CLIENT");
-        let username = utils::get_env("MQTT_USERNAME");
-        let password = utils::get_env("MQTT_PASSWORD");
-        let lwt_topic = utils::get_env("MQTT_LWT_TOPIC");
-        let lwt_payload = utils::get_env("MQTT_LWT_PAYLOAD");
-
-        MqttConnectOptions {
-            broker,
-            client_id,
-            username,
-            password,
-            lwt_topic,
-            lwt_payload,
-        }
-    }
-}
 
 #[tokio::main]
 async fn main() -> azure_core::error::Result<()> {
@@ -167,8 +129,8 @@ async fn main() -> azure_core::error::Result<()> {
     // Send MQTT client to it's own thread.
     thread::spawn(move || {
         // By default, values are loaded from env. See <MqttConnectOptions>
-        let mqtt_connect_options: MqttConnectOptions = MqttConnectOptions {
-            ..MqttConnectOptions::default()
+        let mqtt_connect_options: types::MqttConnectOptions = types::MqttConnectOptions {
+            ..types::MqttConnectOptions::default()
         };
 
         // Create the client. Use an ID for a persistent session.

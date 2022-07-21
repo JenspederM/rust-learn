@@ -30,6 +30,7 @@ fn get_payload(msg: &mqtt::Message) -> Result<types::MqttPayload> {
     let payload_str: Value = serde_json::from_str(&msg.payload_str()).expect("Hello");
     // Set default path
     let path = String::from("");
+    // Default for number of files to write at a time.
     let mut n_per_file = 1;
 
     // Handle PackML
@@ -127,7 +128,7 @@ async fn main() -> azure_core::error::Result<()> {
     let (tx, rx) = mpsc::channel();
 
     // Send MQTT client to it's own thread.
-    thread::spawn(move || {
+    let handle = thread::spawn(move || {
         // By default, values are loaded from env. See <MqttConnectOptions>
         let mqtt_connect_options: types::MqttConnectOptions = types::MqttConnectOptions {
             ..types::MqttConnectOptions::default()
@@ -245,5 +246,8 @@ async fn main() -> azure_core::error::Result<()> {
             log::debug!("Current Map: {:?}", map);
         }
     }
+
+    // Wait for the MQTT client to finish.
+    handle.join().unwrap();
     Ok(())
 }

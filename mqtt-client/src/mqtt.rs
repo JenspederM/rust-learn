@@ -13,7 +13,7 @@ use crate::{types, utils};
 ///
 /// Takes an `mqtt:Message` and constructs a `MqttPayload` based on the topic
 /// from which the `mqtt::Message` is sent.
-fn get_payload(msg: &mqtt::Message) -> Result<types::MqttPayload> {
+fn get_payload(msg: &mqtt::Message) -> Result<types::WriteJob> {
     // Get current time
     let now = Utc::now();
 
@@ -65,7 +65,7 @@ fn get_payload(msg: &mqtt::Message) -> Result<types::MqttPayload> {
         }
     }
 
-    let payload = types::MqttPayload {
+    let payload = types::WriteJob {
         path: path,
         payload: payload_str.to_string(),
         n_per_file: n_per_file,
@@ -110,7 +110,7 @@ fn on_connect_failure(cli: &mqtt::AsyncClient, _msgid: u16, rc: i32) {
     cli.reconnect_with_callbacks(on_connect_success, on_connect_failure);
 }
 
-pub fn start_mqtt_thread(tx: Sender<types::MqttPayload>) -> JoinHandle<()> {
+pub fn start_mqtt_thread(tx: Sender<types::WriteJob>) -> JoinHandle<()> {
     // Send MQTT client to it's own thread.
     let handle = thread::spawn(move || {
         // By default, values are loaded from env. See <MqttConnectOptions>

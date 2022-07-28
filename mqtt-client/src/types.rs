@@ -4,10 +4,20 @@ use crate::utils;
 
 /// Custom payload produced by get_payload
 #[derive(Debug)]
-pub struct MqttPayload {
+pub struct WriteJob {
     pub path: String,
     pub payload: String,
     pub n_per_file: i32,
+}
+
+impl Default for WriteJob {
+    fn default() -> Self {
+        WriteJob {
+            path: "".to_string(),
+            payload: "".to_string(),
+            n_per_file: 1,
+        }
+    }
 }
 
 /// Connection options for MQTT Client.

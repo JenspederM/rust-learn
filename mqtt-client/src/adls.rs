@@ -61,7 +61,7 @@ pub async fn upload_data_single(
     path: String,
     data: Vec<String>,
 ) -> azure_core::error::Result<()> {
-    log::info!("Creating file system client for {container}");
+    log::debug!("Creating file system client for {container}");
     let file_system_client = data_lake_client.clone().into_file_system_client(&container);
 
     let file_path = path;
@@ -69,7 +69,7 @@ pub async fn upload_data_single(
 
     log::info!("creating file '{}'...", file_path);
     let create_file_response = file_client.create().into_future().await?;
-    log::info!("create file response == {:?}\n", create_file_response);
+    log::debug!("create file response == {:?}\n", create_file_response);
 
     let data = data;
     let mut offset = 0;
@@ -80,21 +80,21 @@ pub async fn upload_data_single(
         let file_size = byte_arr.len() as i64;
 
         log::debug!(
-            "appending '{:?}' to file '{}' at offset {}...",
+            "Appending '{:?}' to file '{}' at offset {}...",
             byte_arr,
             file_path,
             offset
         );
 
         let append_to_file = file_client.append(offset, byte_arr).into_future().await?;
-        log::debug!("append to file response == {:?}\n", append_to_file);
+        log::debug!("Append to file response == {:?}\n", append_to_file);
 
         offset += file_size;
     }
 
-    log::info!("flushing file '{}'...", file_path);
+    log::debug!("Flushing file '{}'...", file_path);
     let flush_file_response = file_client.flush(offset).close(true).into_future().await?;
-    log::debug!("flush file response == {:?}\n", flush_file_response);
+    log::debug!("Flush file response == {:?}\n", flush_file_response);
 
     Ok(())
 }

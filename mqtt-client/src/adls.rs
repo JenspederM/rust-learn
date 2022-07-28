@@ -25,7 +25,7 @@ pub async fn upload_json_multiline(
     let file_path = format!("{}/{}", path, file_name);
     let file_client = file_system_client.get_file_client(&file_path);
 
-    log::info!("Creating file '{}' with {} lines...", file_path, data.len());
+    log::debug!("Creating file '{}' with {} lines...", file_path, data.len());
     let create_file_response = file_client.create().into_future().await?;
     log::debug!("Create file response == {:?}\n", create_file_response);
 
@@ -47,9 +47,9 @@ pub async fn upload_json_multiline(
 
     offset += file_size;
 
-    log::info!("flushing file '{}'...", file_path);
+    log::debug!("flushing file '{}'...", file_path);
     let flush_file_response = file_client.flush(offset).close(true).into_future().await?;
-    log::info!("flush file response == {:?}\n", flush_file_response);
+    log::debug!("flush file response == {:?}\n", flush_file_response);
 
     Ok(())
 }
@@ -67,7 +67,7 @@ pub async fn upload_data_single(
     let file_path = path;
     let file_client = file_system_client.get_file_client(&file_path);
 
-    log::info!("creating file '{}'...", file_path);
+    log::debug!("creating file '{}'...", file_path);
     let create_file_response = file_client.create().into_future().await?;
     log::debug!("create file response == {:?}\n", create_file_response);
 

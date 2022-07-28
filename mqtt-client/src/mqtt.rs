@@ -1,19 +1,54 @@
 extern crate paho_mqtt as mqtt;
+
 use chrono::{Datelike, Utc};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::time::Duration;
 use std::{process, thread::JoinHandle};
 
+use dotenv::dotenv;
 use serde_json::{Result, Value};
 
-use crate::{types, utils};
+use crate::{adls, utils};
+
+/// Connection options for MQTT Client.
+#[derive(Debug)]
+pub struct MqttConnectOptions {
+    pub broker: String,
+    pub client_id: String,
+    pub username: String,
+    pub password: String,
+    pub lwt_topic: String,
+    pub lwt_payload: String,
+}
+
+impl Default for MqttConnectOptions {
+    fn default() -> MqttConnectOptions {
+        dotenv().ok();
+
+        let broker = utils::env_default("MQTT_BROKER", "tcp://localhost:1883");
+        let client_id = utils::env_default("MQTT_CLIENT", "rust_client");
+        let username = utils::env_default("MQTT_USERNAME", "");
+        let password = utils::env_default("MQTT_PASSWORD", "");
+        let lwt_topic = utils::env_default("MQTT_LWT_TOPIC", "lwt");
+        let lwt_payload = utils::env_default("MQTT_LWT_PAYLOAD", "Last will for 'rust_client'");
+
+        MqttConnectOptions {
+            broker,
+            client_id,
+            username,
+            password,
+            lwt_topic,
+            lwt_payload,
+        }
+    }
+}
 
 /// Contruct MqttPayload based on Topic.
 ///
 /// Takes an `mqtt:Message` and constructs a `MqttPayload` based on the topic
 /// from which the `mqtt::Message` is sent.
-fn get_payload(msg: &mqtt::Message) -> Result<types::WriteJob> {
+fn get_payload(msg: &mqtt::Message) -> Result<adls::WriteJob> {
     // Get current time
     let now = Utc::now();
 
@@ -65,7 +100,7 @@ fn get_payload(msg: &mqtt::Message) -> Result<types::WriteJob> {
         }
     }
 
-    let payload = types::WriteJob {
+    let payload = adls::WriteJob {
         path: path,
         payload: payload_str.to_string(),
         n_per_file: n_per_file,
@@ -110,12 +145,12 @@ fn on_connect_failure(cli: &mqtt::AsyncClient, _msgid: u16, rc: i32) {
     cli.reconnect_with_callbacks(on_connect_success, on_connect_failure);
 }
 
-pub fn start_mqtt_thread(tx: Sender<types::WriteJob>) -> JoinHandle<()> {
+pub fn start_mqtt_thread(tx: Sender<adls::WriteJob>) -> JoinHandle<()> {
     // Send MQTT client to it's own thread.
     let handle = thread::spawn(move || {
         // By default, values are loaded from env. See <MqttConnectOptions>
-        let mqtt_connect_options: types::MqttConnectOptions = types::MqttConnectOptions {
-            ..types::MqttConnectOptions::default()
+        let mqtt_connect_options: MqttConnectOptions = MqttConnectOptions {
+            ..MqttConnectOptions::default()
         };
 
         // Create the client. Use an ID for a persistent session.

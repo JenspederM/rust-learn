@@ -7,7 +7,6 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::JoinHandle;
 mod adls;
 mod mqtt;
-mod types;
 mod utils;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -19,7 +18,7 @@ async fn main() -> azure_core::error::Result<()> {
 
     // Create Sender and Receiver to pass messages between two threads.
     // One thread will run the MQTT client, and the other will send messages to ADLS.
-    let (transmitter, receiver): (Sender<types::WriteJob>, Receiver<types::WriteJob>) =
+    let (transmitter, receiver): (Sender<adls::WriteJob>, Receiver<adls::WriteJob>) =
         mpsc::channel();
 
     // Initiate MQTT client on it's own thread and send messages through a channel.

@@ -5,6 +5,24 @@ use chrono::Utc;
 use log;
 use uuid::Uuid;
 
+/// Definition of what is expected by worker for writing to ADLS.
+#[derive(Debug)]
+pub struct WriteJob {
+    pub path: String,
+    pub payload: String,
+    pub n_per_file: i32,
+}
+
+impl Default for WriteJob {
+    fn default() -> Self {
+        WriteJob {
+            path: "".to_string(),
+            payload: "".to_string(),
+            n_per_file: 1,
+        }
+    }
+}
+
 pub async fn upload_json_multiline(
     data_lake_client: &DataLakeClient,
     container: String,

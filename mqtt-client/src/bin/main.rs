@@ -5,27 +5,30 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread::JoinHandle;
-mod adls;
-mod mqtt;
-mod utils;
+
+use mqtt_adls_bridge::{
+    adls::{create_data_lake_client, upload_json_multiline, WriteJob},
+    mqtt::start_mqtt_thread,
+    utils::init_log,
+    ThreadPool,
+};
 
 /////////////////////////////////////////////////////////////////////////////
 
 #[tokio::main]
 async fn main() -> azure_core::error::Result<()> {
     // Initialize Logging
-    utils::init_log();
+    init_log();
 
     // Create Sender and Receiver to pass messages between two threads.
     // One thread will run the MQTT client, and the other will send messages to ADLS.
-    let (transmitter, receiver): (Sender<adls::WriteJob>, Receiver<adls::WriteJob>) =
-        mpsc::channel();
+    let (transmitter, receiver): (Sender<WriteJob>, Receiver<WriteJob>) = mpsc::channel();
 
     // Initiate MQTT client on it's own thread and send messages through a channel.
-    let handle: JoinHandle<()> = mqtt::start_mqtt_thread(transmitter);
+    let handle: JoinHandle<()> = start_mqtt_thread(transmitter);
 
     // Create client to interact with the datalake.
-    let data_lake_client = adls::create_data_lake_client().await?;
+    let data_lake_client = create_data_lake_client().await?;
 
     // Initialize HashMap (dictionary) to hold <path, Vec<payload_str>>
     let mut map: HashMap<String, Vec<String>> = HashMap::new();
@@ -57,7 +60,7 @@ async fn main() -> azure_core::error::Result<()> {
                             &received.path.to_string()
                         );
                         // Upload multiline json to datalake
-                        adls::upload_json_multiline(
+                        upload_json_multiline(
                             &data_lake_client,
                             "raw".to_string(),
                             format!("rust-tests/{}", &received.path.to_string()),

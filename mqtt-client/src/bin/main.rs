@@ -10,7 +10,6 @@ use mqtt_adls_bridge::{
     adls::{create_data_lake_client, upload_json_multiline, WriteJob},
     mqtt::start_mqtt_thread,
     utils::init_log,
-    ThreadPool,
 };
 
 /////////////////////////////////////////////////////////////////////////////

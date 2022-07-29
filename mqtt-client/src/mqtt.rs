@@ -1,15 +1,9 @@
-extern crate paho_mqtt as mqtt;
-
-use chrono::{Datelike, Utc};
-use std::sync::mpsc::Sender;
-use std::thread;
-use std::time::Duration;
-use std::{process, thread::JoinHandle};
-
-use dotenv::dotenv;
-use serde_json::{Result, Value};
-
 use crate::{adls, utils};
+use chrono::{Datelike, Utc};
+use dotenv::dotenv;
+use paho_mqtt as mqtt;
+use serde_json::{Result, Value};
+use std::{process, sync::mpsc::Sender, thread, thread::JoinHandle, time::Duration};
 
 /// Connection options for MQTT Client.
 #[derive(Debug)]

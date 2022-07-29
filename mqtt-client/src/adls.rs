@@ -1,3 +1,11 @@
+use std::{
+    collections::{
+        hash_map::Entry::{Occupied, Vacant},
+        HashMap,
+    },
+    sync::mpsc::Receiver,
+};
+
 use azure_storage::storage_shared_key_credential::StorageSharedKeyCredential;
 use azure_storage_datalake::prelude::*;
 use bytes::Bytes;
@@ -21,6 +29,60 @@ impl Default for WriteJob {
             n_per_file: 1,
         }
     }
+}
+
+pub async fn handle_write_jobs(
+    data_lake_client: DataLakeClient,
+    receiver: Receiver<WriteJob>,
+) -> azure_core::error::Result<()> {
+    // Initialize HashMap (dictionary) to hold <path, Vec<payload_str>>
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+
+    // For every message received by receiver
+    for received in receiver {
+        log::debug!("Received: {:?}", received);
+        // If there is a path
+        if received.path != "" {
+            // Match on the path
+            match map.entry(received.path.to_string()) {
+                // If the path doesn't exist, then insert a vector with the payoad
+                Vacant(e) => {
+                    log::debug!("entry {} is vacant!", e.key());
+                    e.insert(vec![received.payload]);
+                }
+                // If the path does exist
+                Occupied(mut e) => {
+                    log::debug!("entry {} is occupied!", e.key());
+                    // Get the current vector of payloads from the topic as a mutable
+                    let v = e.get_mut();
+                    // Add the newly received payload to the vector
+                    v.push(received.payload);
+                    // If we have reached our write limit we flush our data
+                    if v.len() as i32 == received.n_per_file {
+                        log::info!(
+                            "Flushing {} lines to {}",
+                            &received.n_per_file,
+                            &received.path.to_string()
+                        );
+                        // Upload multiline json to datalake
+                        upload_json_multiline(
+                            &data_lake_client,
+                            "raw".to_string(),
+                            format!("rust-tests/{}", &received.path.to_string()),
+                            v.to_vec(),
+                            "json".to_string(),
+                        )
+                        .await?;
+                        // Clear vector for new messages
+                        v.clear();
+                    }
+                }
+            };
+            log::debug!("Current Map: {:?}", map);
+        }
+    }
+
+    Ok(())
 }
 
 pub async fn upload_json_multiline(

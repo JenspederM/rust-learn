@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["Jens Peder Meldgaard"]
 description = "A crate that listens to MQTT topics and write messages to Azure Datalake Gen2"
 readme = "README.md"
+repository = "https://github.com/JenspederM/rust-learn/tree/main/mqtt_adls_bridge"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

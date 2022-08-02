@@ -181,9 +181,9 @@ pub async fn upload_data_single(
 
 #[allow(unused)]
 pub async fn create_data_lake_client() -> azure_core::error::Result<DataLakeClient> {
-    let account_name = std::env::var("ADLSGEN2_STORAGE_ACCOUNT")
+    let account_name = std::env::var("ADLSGEN2_STORAGE_ACCOUNT_NAME")
         .expect("Set env variable ADLSGEN2_STORAGE_ACCOUNT first!");
-    let account_key = std::env::var("ADLSGEN2_STORAGE_ACCESS_KEY")
+    let account_key = std::env::var("ADLSGEN2_STORAGE_ACCOUNT_KEY")
         .expect("Set env variable ADLSGEN2_STORAGE_ACCESS_KEY first!");
 
     Ok(DataLakeClient::new(

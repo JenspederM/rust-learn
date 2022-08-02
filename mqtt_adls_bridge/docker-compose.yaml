@@ -1,5 +1,5 @@
 services:
   client:
-    image: mqtt_adls_bridge
+    image: mqtt_adls_bridge:0.1.0
     env_file:
       - .env

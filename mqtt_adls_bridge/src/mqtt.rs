@@ -21,7 +21,7 @@ impl Default for MqttConnectOptions {
         dotenv().ok();
 
         let broker = utils::env_default("MQTT_BROKER", "tcp://localhost:1883");
-        let client_id = utils::env_default("MQTT_CLIENT", "rust_client");
+        let client_id = utils::env_default("MQTT_CLIENT_ID", "rust_client");
         let username = utils::env_default("MQTT_USERNAME", "");
         let password = utils::env_default("MQTT_PASSWORD", "");
         let lwt_topic = utils::env_default("MQTT_LWT_TOPIC", "lwt");

@@ -25,7 +25,8 @@ impl Default for MqttConnectOptions {
         let username = utils::env_default("MQTT_USERNAME", "");
         let password = utils::env_default("MQTT_PASSWORD", "");
         let lwt_topic = utils::env_default("MQTT_LWT_TOPIC", "lwt");
-        let lwt_payload = utils::env_default("MQTT_LWT_PAYLOAD", "Last will for 'rust_client'");
+        let lwt_payload_default = format!("Last will for {}", client_id);
+        let lwt_payload = utils::env_default("MQTT_LWT_PAYLOAD", lwt_payload_default.as_str());
 
         MqttConnectOptions {
             broker,

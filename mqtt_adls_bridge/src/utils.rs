@@ -14,9 +14,9 @@ pub fn env_default(key: &str, default: &str) -> String {
     match env::var(key) {
         Ok(s) => {
             if mask {
-                log::info!("'{key}' set to '********'")
+                log::debug!("'{key}' set to '********'")
             } else {
-                log::info!("'{key}' set to '{s}'")
+                log::debug!("'{key}' set to '{s}'")
             }
         }
         Err(_) => {

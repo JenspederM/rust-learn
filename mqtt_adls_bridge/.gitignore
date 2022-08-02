@@ -16,3 +16,6 @@ Cargo.lock
 # Env files
 .env
 *.env
+
+# Mac files
+.DS_Store

@@ -12,7 +12,7 @@ The bridge is configured using environment variables. The following variables ar
 | MQTT_CLIENT_ID       | The MQTT client ID to use                                         | rust_client                 |
 | MQTT_TOPIC           | The topic to subscribe to                                         | #                           |
 | MQTT_LWT_TOPIC       | The topic to publish the last will and testament to               | lwt                         |
-| MQTT_LWT_MESSAGE     | The message to publish as the last will and testament             | Last will for 'rust_client' |
+| MQTT_LWT_MESSAGE     | The message to publish as the last will and testament             | Last will for '<client_id>' |
 | MQTT_USERNAME        | The username to use when connecting to the broker                 |                             |
 | MQTT_PASSWORD        | The password to use when connecting to the broker                 |                             |
 | ADLS_ACCOUNT         | The name of the Azure Datalake Gen2 account                       |                             |

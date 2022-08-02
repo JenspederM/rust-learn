@@ -19,3 +19,6 @@ Cargo.lock
 
 # Mac files
 .DS_Store
+
+# Tmp files
+rust_subscribe*/

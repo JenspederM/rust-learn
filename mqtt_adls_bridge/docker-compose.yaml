@@ -1,0 +1,6 @@
+services:
+  client:
+    image: client
+    build:
+      context: .
+      dockerfile: Dockerfile

@@ -1,6 +1,5 @@
 services:
   client:
-    image: client
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: mqtt_adls_bridge
+    env_file:
+      - .env

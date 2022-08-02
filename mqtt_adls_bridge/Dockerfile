@@ -1,29 +1,21 @@
-# Dockerfile for creating a statically-linked Rust application using docker's
-# multi-stage build feature. This also leverages the docker build cache to avoid
-# re-downloading dependencies if they have not changed.
-FROM rust:alpine3.15 as build
+# STAGE 1 is to build the binary
+# Use rust-based image for container
+FROM rust:1.62 AS builder
 
-# install system dependencies
-RUN USER=root apk upgrade --update-cache --available && \
-    apk add pkgconfig openssl-dev cmake build-base && \
-    rm -rf /var/cache/apk/*
+RUN apt-get update && apt-get install -y \
+    cmake make
 
-WORKDIR /usr/src
-
-# Create a dummy project and build the app's dependencies.
-# If the Cargo.toml or Cargo.lock files have not changed,
-# we can use the docker build cache and skip these (typically slow) steps.
-RUN USER=root cargo new mqtt_adls_bridge
 WORKDIR /usr/src/mqtt_adls_bridge
-COPY Cargo.toml Cargo.lock ./
-RUN cargo build --release
-RUN rm src/*.rs
 
-# Copy the source and build the application.
-COPY src ./src
-RUN cargo build --release
+COPY . .
 
-FROM scratch
-COPY --from=build /usr/src/mqtt_adls_bridge/target/release/mqtt_adls_bridge .
-USER 1000
-CMD ["./mqtt_adls_bridge"]
+RUN cargo install --path .
+
+FROM debian:buster-slim
+
+RUN apt-get update && apt-get install -y \
+    libssl-dev
+
+COPY --from=builder /usr/local/cargo/bin/mqtt_adls_bridge /usr/local/bin/mqtt_adls_bridge
+
+CMD ["mqtt_adls_bridge"]

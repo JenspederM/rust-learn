@@ -13,4 +13,9 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 
+# Env files
 .env
+*.env
+
+# Mac files
+.DS_Store
